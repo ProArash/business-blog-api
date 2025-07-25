@@ -10,13 +10,13 @@ export class UserService {
 		private userRepo: Repository<UserEntity>,
 	) {}
 
-	async getUserByUsername(username: string) {
+	async getUserByEmail(email: string) {
 		const user = await this.userRepo.findOne({
 			where: {
-				username,
+				email,
 			},
 		});
-		if (!user) throw new NotFoundException('نام کاربری یافت نشد.');
+		if (!user) throw new NotFoundException('Username not found.');
 		return user;
 	}
 }

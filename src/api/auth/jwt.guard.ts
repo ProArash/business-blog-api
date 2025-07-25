@@ -10,7 +10,7 @@ export interface ICookies {
 
 export interface IUserPayload {
 	id: number;
-	username: string;
+	email: string;
 	name: string;
 }
 
@@ -23,7 +23,7 @@ export class JwtAuthGuard extends PassportStrategy(Strategy, 'jwt') {
 					const cookies: ICookies = req.cookies as ICookies;
 					let token = '';
 					if (cookies.token) token = cookies.token;
-					else throw new UnauthorizedException('لطفا وارد اکانت خود شوید');
+					else throw new UnauthorizedException('Please login to you account.');
 					return token;
 				},
 			]),

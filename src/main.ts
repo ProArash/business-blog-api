@@ -29,7 +29,7 @@ async function bootstrap() {
 				});
 				return new HttpException(
 					{
-						message: 'لطفا ورودی های خود را چک کنید',
+						message: 'Please check your inputs.',
 						status: HttpStatus.BAD_REQUEST,
 						properties: errorObj,
 						errors: errorStrings,

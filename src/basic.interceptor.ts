@@ -26,7 +26,7 @@ export class BasicInterceptor<T>
 				if (Array.isArray(data)) count = data.length;
 				const noData = typeof data == 'boolean';
 				return {
-					message: 'عملیات موفق',
+					message: 'successful',
 					count,
 					data: noData ? undefined : data,
 				};

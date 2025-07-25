@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
@@ -13,16 +13,31 @@ export class PostService {
 		private userService: UserService,
 	) {}
 	async create(createPostDto: CreatePostDto, username: string) {
-		const user = await this.userService.getUserByUsername(username);
+		const user = await this.userService.getUserByEmail(username);
 		return await this.postRepo
 			.create({
 				...createPostDto,
-				owner: user,
+				author: user,
 			})
 			.save();
 	}
 
-	async findAll() {
-		return await this.postRepo.find();
+	async findAll(pageNumber: number) {
+		const limit = 20;
+		const skip = (pageNumber - 1) * limit;
+		return await this.postRepo.find({
+			take: limit,
+			skip,
+		});
+	}
+
+	async getPostById(postId: number) {
+		const post = await this.postRepo.findOne({
+			where: {
+				id: postId,
+			},
+		});
+		if (!post) throw new NotFoundException('Post not found.');
+		return post;
 	}
 }

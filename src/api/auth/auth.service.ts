@@ -20,11 +20,11 @@ export class AuthService {
 		const users = await this.userRepo.find();
 		let user = await this.userRepo.findOne({
 			where: {
-				username: authDto.username,
+				email: authDto.email,
 			},
 			select: {
 				id: true,
-				username: true,
+				email: true,
 				password: true,
 				name: true,
 			},
@@ -33,22 +33,22 @@ export class AuthService {
 		if (!user) {
 			user = await this.userRepo
 				.create({
-					username: authDto.username,
+					email: authDto.email,
 					password: await bcryptjs.hash(authDto.password, 10),
 					roles:
 						users.length == 0
-							? [UserRoles.ADMIN, UserRoles.USER]
-							: [UserRoles.USER],
+							? [UserRoles.ADMIN, UserRoles.AUTHOR]
+							: [UserRoles.AUTHOR],
 				})
 				.save();
 		}
 		const result = await bcryptjs.compare(authDto.password, user.password);
-		if (!result) throw new BadRequestException('رمز وارد شده اشتباه است.');
+		if (!result) throw new BadRequestException('Invalid password.');
 
 		const payload: IUserPayload = {
 			id: user.id,
 			name: user.name,
-			username: user.username,
+			email: user.email,
 		};
 
 		const token = await this.jwtService.signAsync(payload);

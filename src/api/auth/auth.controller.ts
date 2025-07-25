@@ -20,7 +20,7 @@ export class AuthController {
 			maxAge: 1000 * 60 * 60 * 24 * 7,
 		});
 		return res.status(200).json({
-			message: 'با موفقیت وارد شدید',
+			message: 'Logged in successfuly.',
 		});
 	}
 }

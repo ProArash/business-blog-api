@@ -7,6 +7,7 @@ import {
 	UseInterceptors,
 	UploadedFile,
 	UseGuards,
+	Query,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -65,14 +66,14 @@ export class PostController {
 		@Req() req: Request,
 		@UploadedFile() file: Express.Multer.File,
 	) {
-		const { username } = req.user as IUserPayload;
+		const { email: username } = req.user as IUserPayload;
 		createPostDto.imageUrl = file.filename;
 
 		return await this.postService.create(createPostDto, username);
 	}
 
-	@Get()
-	findAll() {
-		return this.postService.findAll();
+	@Get('getAll')
+	findAll(@Query('pageNumber') pageNumber: string) {
+		return this.postService.findAll(+pageNumber);
 	}
 }
