@@ -29,8 +29,7 @@ export class RolesGuard implements CanActivate {
 		const hasPermission = userData.roles.some((role) =>
 			requiredRoles.includes(role),
 		);
-		if (!hasPermission)
-			throw new ForbiddenException('به این بخش دسترسی ندارید');
+		if (!hasPermission) throw new ForbiddenException('Insuffienct permission.');
 		return true;
 	}
 }
