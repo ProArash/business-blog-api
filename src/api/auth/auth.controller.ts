@@ -1,8 +1,19 @@
-import { Body, Controller, Post, Res, ValidationPipe } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	Post,
+	Req,
+	Res,
+	UseGuards,
+	ValidationPipe,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ApiBody } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { UserPayload } from './user.payload';
 
 @Controller('auth')
 export class AuthController {
@@ -46,5 +57,12 @@ export class AuthController {
 		return res.status(200).json({
 			message: 'Logged in successfuly.',
 		});
+	}
+
+	@UseGuards(AuthGuard('jwt'))
+	@Get('profile')
+	async getCurrentUser(@Req() req: Request) {
+		const user = req.user as UserPayload;
+		return await this.authService.getCurrentProfile(+user.id);
 	}
 }

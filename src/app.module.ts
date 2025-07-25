@@ -12,6 +12,7 @@ import { SliderModule } from './api/slider/slider.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { MediaEntity } from './utils/media.entity';
+import { MediaModule } from './api/media/media.module';
 
 @Module({
 	imports: [
@@ -40,6 +41,7 @@ import { MediaEntity } from './utils/media.entity';
 		CommentModule,
 		AboutUsModule,
 		SliderModule,
+		MediaModule,
 	],
 })
 export class AppModule {}
