@@ -10,7 +10,10 @@ export class SliderEntity extends FixedEntity {
 	@Column()
 	subtitle: string;
 
-	@OneToMany(() => MediaEntity, (file) => file.slider)
+	@OneToMany(() => MediaEntity, (file) => file.slider, {
+		cascade: true,
+		onDelete: 'CASCADE',
+	})
 	medias: MediaEntity[];
 
 	@Column()

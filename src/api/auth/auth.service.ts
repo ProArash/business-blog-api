@@ -39,6 +39,7 @@ export class AuthService {
 						users.length == 0
 							? [UserRoles.ADMIN, UserRoles.AUTHOR]
 							: [UserRoles.AUTHOR],
+					name: authDto.name ?? null,
 				})
 				.save();
 		}

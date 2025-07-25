@@ -8,55 +8,70 @@ import {
 	UploadedFile,
 	UseGuards,
 	Query,
+	BadRequestException,
+	Patch,
+	Delete,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { Request } from 'express';
-import { IUserPayload } from '../auth/jwt.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuid } from 'uuid';
 import { extname } from 'path';
 import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { UserPayload } from '../auth/user.payload';
+import { PostStatus } from './entities/post.entity';
+import { UpdatePostDto } from './dto/update-post.dto';
+import { RolesGuard } from '../auth/roles.guard';
+import { UserRoles } from '../user/user.roles';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('post')
 export class PostController {
 	constructor(private readonly postService: PostService) {}
 
-	@UseGuards(AuthGuard('jwt'))
-	@Post('uploadImage')
+	@Post('newPost')
+	@UseGuards(AuthGuard('jwt'), RolesGuard)
+	@Roles(UserRoles.ADMIN, UserRoles.AUTHOR)
 	@UseInterceptors(
-		FileInterceptor('image', {
+		FileInterceptor('media', {
 			storage: diskStorage({
 				destination: './uploads',
 				filename: (req, file, callback) => {
 					const suffix = uuid();
 					const extension = extname(file.originalname);
 					const fileName = `${suffix}${extension}`;
-					return callback(null, fileName);
+					callback(null, fileName);
 				},
 			}),
+			fileFilter(req, file, callback) {
+				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+					return callback(
+						new BadRequestException('Only media files are allowed!'),
+						false,
+					);
+				}
+				callback(null, true);
+			},
 		}),
 	)
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({
-		type: 'multipart/form-data',
 		schema: {
 			type: 'object',
+			required: ['media', 'title', 'slug', 'content', 'status', 'tags'],
 			properties: {
-				image: {
-					type: 'string',
-					format: 'binary',
-				},
-				tag: {
-					type: 'string',
-				},
-				title: {
-					type: 'string',
-				},
-				description: {
-					type: 'string',
+				media: { type: 'string', format: 'binary' },
+				title: { type: 'string', example: 'My Awesome Post' },
+				slug: { type: 'string', example: 'my-awesome-post' },
+				content: { type: 'string', example: 'This is the full content...' },
+				status: { type: 'string', enum: Object.values(PostStatus) },
+				tags: {
+					type: 'array',
+					items: { type: 'string' },
+					example: ['tech', 'nestjs'],
 				},
 			},
 		},
@@ -66,14 +81,71 @@ export class PostController {
 		@Req() req: Request,
 		@UploadedFile() file: Express.Multer.File,
 	) {
-		const { email: username } = req.user as IUserPayload;
-		createPostDto.imageUrl = file.filename;
-
-		return await this.postService.create(createPostDto, username);
+		if (!file) {
+			throw new BadRequestException('Media file is required.');
+		}
+		const { email } = req.user as UserPayload;
+		return await this.postService.create(createPostDto, email, file);
 	}
 
 	@Get('getAll')
 	findAll(@Query('pageNumber') pageNumber: string) {
 		return this.postService.findAll(+pageNumber);
+	}
+
+	@Get('getById')
+	getById(@Query('id') id: string) {
+		return this.postService.getPostById(+id);
+	}
+
+	@Patch('updateById')
+	@UseGuards(AuthGuard('jwt'), RolesGuard)
+	@Roles(UserRoles.ADMIN, UserRoles.AUTHOR)
+	@UseInterceptors(
+		FileInterceptor('media', {
+			storage: diskStorage({
+				destination: './uploads',
+				filename: (req, file, callback) => {
+					const fileName = `${uuid()}${extname(file.originalname)}`;
+					callback(null, fileName);
+				},
+			}),
+			fileFilter(req, file, callback) {
+				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+					return callback(
+						new BadRequestException('Only media files are allowed!'),
+						false,
+					);
+				}
+				callback(null, true);
+			},
+		}),
+	)
+	@ApiConsumes('multipart/form-data')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			properties: {
+				media: { type: 'string', format: 'binary', nullable: true },
+				title: { type: 'string' },
+				slug: { type: 'string' },
+				content: { type: 'string' },
+				status: { type: 'string', enum: Object.values(PostStatus) },
+				tags: { type: 'array', items: { type: 'string' } },
+			},
+		},
+	})
+	async update(
+		@Query('id') id: string,
+		@Body() updatePostDto: UpdatePostDto,
+		@UploadedFile() file?: Express.Multer.File, // File is optional for updates
+	) {
+		return await this.postService.update(+id, updatePostDto, file);
+	}
+	@Delete('deleteById')
+	@UseGuards(AuthGuard('jwt'), RolesGuard)
+	@Roles(UserRoles.ADMIN, UserRoles.AUTHOR)
+	async remove(@Query('id') id: string) {
+		return await this.postService.remove(+id);
 	}
 }

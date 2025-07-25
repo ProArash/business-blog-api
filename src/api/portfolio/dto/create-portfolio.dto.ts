@@ -8,8 +8,5 @@ export class CreatePortfolioDto {
 	description: string;
 
 	@IsNotEmpty()
-	imageUrl: string;
-
-	@IsNotEmpty()
 	url: string;
 }

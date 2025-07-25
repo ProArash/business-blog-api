@@ -35,7 +35,7 @@ export class SliderController {
 	@UseGuards(AuthGuard('jwt'), RolesGuard)
 	@Roles(UserRoles.ADMIN)
 	@UseInterceptors(
-		FilesInterceptor('images', 10, {
+		FilesInterceptor('medias', 10, {
 			storage: diskStorage({
 				destination: './uploads',
 				filename(req, file, callback) {
@@ -44,38 +44,50 @@ export class SliderController {
 					callback(null, fileName);
 				},
 			}),
+			fileFilter(req, file, callback) {
+				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+					return callback(
+						new BadRequestException('Only medias files are allowed!'),
+						false,
+					);
+				}
+				callback(null, true);
+			},
 		}),
 	)
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({
-		type: 'multipart/form-data',
 		schema: {
 			type: 'object',
+			required: ['medias', 'title', 'subtitle', 'link', 'order', 'status'],
 			properties: {
-				images: {
+				medias: {
 					type: 'array',
 					items: {
 						type: 'string',
 						format: 'binary',
 					},
+					description: 'An array of medias for the slider.',
 				},
 				title: {
 					type: 'string',
+					example: 'Summer Sale',
 				},
 				subtitle: {
 					type: 'string',
+					example: 'Up to 50% off!',
 				},
 				link: {
 					type: 'string',
-				},
-				description: {
-					type: 'string',
+					example: '/products/summer-collection',
 				},
 				order: {
 					type: 'number',
+					example: 1,
 				},
 				status: {
 					type: 'boolean',
+					example: true,
 				},
 			},
 		},
@@ -86,10 +98,11 @@ export class SliderController {
 		@UploadedFiles() files: Array<Express.Multer.File>,
 		@Req() req: Request,
 	) {
-		if (!files) throw new BadRequestException('images can not be empty');
-		const images = files.map((v) => `/uploads/${v.filename}`);
+		if (!files || files.length === 0) {
+			throw new BadRequestException('Medias cannot be empty');
+		}
 		const { email } = req.user as UserPayload;
-		return this.sliderService.create(createSliderDto, images, email);
+		return this.sliderService.create(createSliderDto, files, email);
 	}
 
 	@Get('getAll')
@@ -105,7 +118,7 @@ export class SliderController {
 	@UseGuards(AuthGuard('jwt'), RolesGuard)
 	@Roles(UserRoles.ADMIN)
 	@UseInterceptors(
-		FilesInterceptor('images', 10, {
+		FilesInterceptor('medias', 10, {
 			storage: diskStorage({
 				destination: './uploads',
 				filename(req, file, callback) {
@@ -114,35 +127,51 @@ export class SliderController {
 					callback(null, fileName);
 				},
 			}),
+			fileFilter(req, file, callback) {
+				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+					return callback(
+						new BadRequestException('Only medias files are allowed!'),
+						false,
+					);
+				}
+				callback(null, true);
+			},
 		}),
 	)
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({
-		type: 'multipart/form-data',
 		schema: {
 			type: 'object',
 			properties: {
-				images: {
-					type: 'string[]',
-					format: 'binary',
+				medias: {
+					type: 'array',
+					items: {
+						type: 'string',
+						format: 'binary',
+					},
+					description:
+						'New medias for the slider. If provided, they will replace the old ones.',
+					nullable: true,
 				},
 				title: {
 					type: 'string',
+					nullable: true,
 				},
 				subtitle: {
 					type: 'string',
+					nullable: true,
 				},
 				link: {
 					type: 'string',
-				},
-				description: {
-					type: 'string',
+					nullable: true,
 				},
 				order: {
 					type: 'number',
+					nullable: true,
 				},
 				status: {
 					type: 'boolean',
+					nullable: true,
 				},
 			},
 		},
@@ -153,8 +182,7 @@ export class SliderController {
 		@Body(new ValidationPipe()) updateSliderDto: UpdateSliderDto,
 		@UploadedFiles() files: Express.Multer.File[],
 	) {
-		const images = files.map((v) => `/uploads/${v.filename}`);
-		return this.sliderService.update(updateSliderDto, +id, images);
+		return this.sliderService.update(updateSliderDto, +id, files);
 	}
 
 	@UseGuards(AuthGuard('jwt'), RolesGuard)

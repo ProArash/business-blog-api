@@ -2,12 +2,36 @@ import { Body, Controller, Post, Res, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Response } from 'express';
+import { ApiBody } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
 	constructor(private readonly authService: AuthService) {}
 
 	@Post('signIn')
+	@ApiBody({
+		schema: {
+			type: 'object',
+			required: ['email', 'password'],
+			properties: {
+				email: {
+					type: 'string',
+					example: 'user@example.com',
+				},
+				password: {
+					type: 'string',
+					format: 'password',
+					example: 'yourStrongPassword123',
+				},
+				name: {
+					type: 'string',
+					description: 'Optional name for the user.',
+					nullable: true,
+					example: 'John Doe',
+				},
+			},
+		},
+	})
 	async signIn(
 		@Body(new ValidationPipe()) authDto: CreateAuthDto,
 		@Res() res: Response,

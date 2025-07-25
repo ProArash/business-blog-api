@@ -25,10 +25,14 @@ export class PostEntity extends FixedEntity {
 	@Column('text')
 	content: string;
 
-	@Column()
+	@Column({
+		nullable: true,
+	})
 	publishedAt: Date;
 
-	@Column()
+	@Column({
+		default: PostStatus.DRAFT,
+	})
 	status: PostStatus;
 
 	@ManyToOne(() => UserEntity, (user) => user.posts)
@@ -37,6 +41,10 @@ export class PostEntity extends FixedEntity {
 	@OneToMany(() => CommentEntity, (comment) => comment.post)
 	comments: CommentEntity[];
 
-	@OneToOne(() => MediaEntity, (media) => media.post)
+	@OneToOne(() => MediaEntity, (media) => media.post, {
+		cascade: true,
+		onDelete: 'CASCADE',
+		eager: true,
+	})
 	media: MediaEntity;
 }

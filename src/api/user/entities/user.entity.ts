@@ -26,5 +26,5 @@ export class UserEntity extends FixedEntity {
 	posts: PostEntity[];
 
 	@OneToMany(() => MediaEntity, (file) => file.user)
-	files: PostEntity[];
+	files: MediaEntity[];
 }

@@ -10,7 +10,11 @@ export class PortfolioEntity extends FixedEntity {
 	@Column('text')
 	description: string;
 
-	@OneToOne(() => MediaEntity, (media) => media.portfolio)
+	@OneToOne(() => MediaEntity, (media) => media.portfolio, {
+		cascade: true,
+		onDelete: 'CASCADE',
+		eager: true,
+	})
 	media: MediaEntity;
 
 	@Column()

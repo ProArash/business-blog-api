@@ -1,14 +1,18 @@
 import { IsNotEmpty } from 'class-validator';
+import { PostStatus } from '../entities/post.entity';
 
 export class CreatePostDto {
 	@IsNotEmpty()
-	tag: string;
+	tags: string[];
 
 	@IsNotEmpty()
 	title: string;
 
 	@IsNotEmpty()
-	description: string;
+	slug: string;
 
-	imageUrl: string;
+	@IsNotEmpty()
+	content: string;
+
+	status: PostStatus;
 }
