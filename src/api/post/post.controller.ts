@@ -47,7 +47,9 @@ export class PostController {
 				},
 			}),
 			fileFilter(req, file, callback) {
-				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+				if (
+					!file.originalname.match(/\.(jpg|jpeg|png|gif|svg|webp|mp4|mp3)$/)
+				) {
 					return callback(
 						new BadRequestException('Only media files are allowed!'),
 						false,
@@ -111,7 +113,9 @@ export class PostController {
 				},
 			}),
 			fileFilter(req, file, callback) {
-				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+				if (
+					!file.originalname.match(/\.(jpg|jpeg|png|gif|svg|webp|mp4|mp3)$/)
+				) {
 					return callback(
 						new BadRequestException('Only media files are allowed!'),
 						false,
@@ -138,7 +142,7 @@ export class PostController {
 	async update(
 		@Query('id') id: string,
 		@Body() updatePostDto: UpdatePostDto,
-		@UploadedFile() file?: Express.Multer.File, // File is optional for updates
+		@UploadedFile() file?: Express.Multer.File,
 	) {
 		return await this.postService.update(+id, updatePostDto, file);
 	}

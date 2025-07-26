@@ -22,14 +22,19 @@ export class ContactUsService {
 	async findAll(pageNumber: number) {
 		if (!pageNumber)
 			throw new BadRequestException('Please provide pageNumber.');
+		const totalCount = await this.repo.count();
 		const limit = 20;
 		const skip = (pageNumber - 1) * limit;
-		console.log(skip);
-
-		return await this.repo.find({
+		const contacts = await this.repo.find({
 			take: limit,
 			skip,
 		});
+
+		return {
+			count: limit,
+			totalCount,
+			contacts,
+		};
 	}
 
 	async findOne(id: number) {

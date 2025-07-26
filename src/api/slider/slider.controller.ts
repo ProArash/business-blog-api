@@ -128,7 +128,9 @@ export class SliderController {
 				},
 			}),
 			fileFilter(req, file, callback) {
-				if (!file.originalname.match(/\.(jpg|jpeg|png|gif|mp4|mp3)$/)) {
+				if (
+					!file.originalname.match(/\.(jpg|jpeg|png|gif|svg|webp|mp4|mp3)$/)
+				) {
 					return callback(
 						new BadRequestException('Only medias files are allowed!'),
 						false,

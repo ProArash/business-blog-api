@@ -43,11 +43,17 @@ export class SliderService {
 	async findAll(pageNumber: number) {
 		const limit = 10;
 		const skip = (pageNumber - 1) * limit;
-		return await this.repo.find({
+		const totalCount = await this.repo.count();
+		const sliders = await this.repo.find({
 			take: limit,
 			skip,
 			relations: ['medias'],
 		});
+		return {
+			count: limit,
+			totalCount,
+			sliders,
+		};
 	}
 
 	async findOne(id: number) {

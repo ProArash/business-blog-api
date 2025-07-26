@@ -37,14 +37,20 @@ export class UserService {
 		return savedUser;
 	}
 
-	async findAll(pageNumber: number = 1): Promise<UserEntity[]> {
+	async findAll(pageNumber: number = 1) {
 		const limit = 20;
 		const skip = (pageNumber - 1) * limit;
-		return this.userRepo.find({
+		const totalCount = await this.userRepo.count();
+		const users = await this.userRepo.find({
 			take: limit,
 			skip,
 			order: { createdAt: 'DESC' },
 		});
+		return {
+			count: limit,
+			totalCount,
+			users,
+		};
 	}
 
 	async findOneById(id: number): Promise<UserEntity> {

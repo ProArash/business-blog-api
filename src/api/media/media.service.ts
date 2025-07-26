@@ -46,15 +46,21 @@ export class MediaService {
 		};
 	}
 
-	async findAll(pageNumber: number = 1): Promise<MediaEntity[]> {
+	async findAll(pageNumber: number = 1) {
 		const limit = 10;
 		const skip = (pageNumber - 1) * limit;
-		return this.mediaRepo.find({
+		const totalCount = await this.mediaRepo.count();
+		const medias = await this.mediaRepo.find({
 			take: limit,
 			skip,
 			relations: ['user'],
 			order: { createdAt: 'DESC' },
 		});
+		return {
+			count: limit,
+			totalCount,
+			medias,
+		};
 	}
 
 	async findOneById(id: number): Promise<MediaEntity> {

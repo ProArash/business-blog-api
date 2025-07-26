@@ -54,7 +54,8 @@ export class PostService {
 	async findAll(pageNumber: number) {
 		const limit = 20;
 		const skip = (pageNumber - 1) * limit;
-		return await this.postRepo.find({
+		const totalCount = await this.postRepo.count();
+		const posts = await this.postRepo.find({
 			take: limit,
 			skip,
 			relations: ['author', 'media'],
@@ -62,6 +63,11 @@ export class PostService {
 				createdAt: 'DESC',
 			},
 		});
+		return {
+			count: limit,
+			totalCount,
+			posts,
+		};
 	}
 
 	async getPostById(postId: number) {

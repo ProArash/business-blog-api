@@ -25,7 +25,8 @@ export class CommentService {
 	}
 
 	async findAll(postId: number) {
-		return await this.repo.find({
+		const totalCount = await this.repo.count();
+		const comments = await this.repo.find({
 			where: {
 				post: {
 					id: postId,
@@ -37,6 +38,10 @@ export class CommentService {
 				updatedAt: true,
 			},
 		});
+		return {
+			totalCount,
+			comments,
+		};
 	}
 
 	async remove(id: number) {
