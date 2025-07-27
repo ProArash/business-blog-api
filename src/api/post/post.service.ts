@@ -19,6 +19,8 @@ export class PostService {
 		@InjectRepository(PostEntity)
 		private postRepo: Repository<PostEntity>,
 		private userService: UserService,
+		@InjectRepository(MediaEntity)
+		private mediaRepo: Repository<MediaEntity>,
 	) {}
 	async create(
 		createPostDto: CreatePostDto,
@@ -124,11 +126,18 @@ export class PostService {
 	async remove(id: number) {
 		const post = await this.getPostById(id);
 
-		if (post.media && post.media.mediaUrl) {
-			await unlink(join(process.cwd(), post.media.mediaUrl)).catch((err) =>
-				console.error(`Failed to delete physical file: ${err}`),
-			);
+		if (post.media) {
+			const mediaEntity = post.media;
+
+			if (mediaEntity.mediaUrl) {
+				await unlink(join(process.cwd(), mediaEntity.mediaUrl)).catch((err) =>
+					console.error(`Failed to delete physical file: ${err}`),
+				);
+			}
+
+			await this.mediaRepo.remove(mediaEntity);
 		}
+
 		await this.postRepo.remove(post);
 
 		return { message: `Post #${id} has been deleted successfully.` };

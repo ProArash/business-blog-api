@@ -13,6 +13,8 @@ export class PortfolioService {
 	constructor(
 		@InjectRepository(PortfolioEntity)
 		private portfolioRepo: Repository<PortfolioEntity>,
+		@InjectRepository(MediaEntity)
+		private mediaRepo: Repository<MediaEntity>,
 	) {}
 
 	async create(
@@ -31,10 +33,21 @@ export class PortfolioService {
 		return this.portfolioRepo.save(portfolioItem);
 	}
 
-	findAll(pageNumber: number) {
+	async findAll(pageNumber: number) {
 		const limit = 10;
 		const skip = (pageNumber - 1) * limit;
-		return this.portfolioRepo.find({ relations: ['media'], take: limit, skip });
+		const [items, totalCount] = await this.portfolioRepo.findAndCount({
+			relations: ['media'],
+			take: limit,
+			skip,
+			order: { createdAt: 'DESC' },
+		});
+
+		return {
+			count: items.length,
+			totalCount,
+			items,
+		};
 	}
 
 	async findOne(id: number) {
@@ -42,8 +55,9 @@ export class PortfolioService {
 			where: { id },
 			relations: ['media'],
 		});
-		if (!portfolioItem)
+		if (!portfolioItem) {
 			throw new NotFoundException(`Portfolio item #${id} not found`);
+		}
 		return portfolioItem;
 	}
 
@@ -55,16 +69,13 @@ export class PortfolioService {
 		const portfolioItem = await this.findOne(id);
 
 		if (file) {
-			// Check if a media entity is already associated
-			if (portfolioItem.media) {
-				// If yes, delete the old physical file
+			if (portfolioItem.media && portfolioItem.media.mediaUrl) {
+				// Delete the old physical file
 				await unlink(join(process.cwd(), portfolioItem.media.mediaUrl)).catch(
 					(err) => console.error(`Failed to delete old file: ${err}`),
 				);
-				// And UPDATE the URL on the EXISTING media object
 				portfolioItem.media.mediaUrl = `/uploads/${file.filename}`;
 			} else {
-				// If no, create a NEW media entity and associate it
 				const newMedia = new MediaEntity();
 				newMedia.mediaUrl = `/uploads/${file.filename}`;
 				newMedia.mediaType = MediaType.IMAGE;
@@ -72,7 +83,6 @@ export class PortfolioService {
 			}
 		}
 
-		// Apply other DTO changes and save
 		Object.assign(portfolioItem, updatePortfolioDto);
 		return this.portfolioRepo.save(portfolioItem);
 	}
@@ -80,13 +90,20 @@ export class PortfolioService {
 	async remove(id: number) {
 		const portfolioItem = await this.findOne(id);
 
-		if (portfolioItem.media?.mediaUrl) {
-			await unlink(join(process.cwd(), portfolioItem.media.mediaUrl)).catch(
-				(err) => console.error(err),
-			);
+		if (portfolioItem.media) {
+			const mediaEntity = portfolioItem.media;
+
+			if (mediaEntity.mediaUrl) {
+				await unlink(join(process.cwd(), mediaEntity.mediaUrl)).catch((err) =>
+					console.error(`Failed to delete physical file: ${err}`),
+				);
+			}
+
+			await this.mediaRepo.remove(mediaEntity);
 		}
 
 		await this.portfolioRepo.remove(portfolioItem);
-		return { message: `Portfolio item #${id} deleted successfully` };
+
+		return { message: `Portfolio item #${id} has been deleted successfully` };
 	}
 }

@@ -17,6 +17,8 @@ export class AboutUsService {
 	constructor(
 		@InjectRepository(AboutUsEntity)
 		private aboutUsRepo: Repository<AboutUsEntity>,
+		@InjectRepository(MediaEntity)
+		private mediaRepo: Repository<MediaEntity>,
 	) {}
 
 	async create(createDto: CreateAboutUsDto, file: Express.Multer.File) {
@@ -69,18 +71,32 @@ export class AboutUsService {
 	}
 
 	async remove(id: number) {
-		const aboutUs = await this.aboutUsRepo.findOneBy({ id });
+		// 2. Find the entry and explicitly load the 'media' relation
+		const aboutUs = await this.aboutUsRepo.findOne({
+			where: { id },
+			relations: ['media'], // Ensure the media relation is loaded
+		});
+
 		if (!aboutUs) {
 			throw new NotFoundException(`About Us entry with ID #${id} not found.`);
 		}
 
-		if (aboutUs.media && aboutUs.media.mediaUrl) {
-			await unlink(join(process.cwd(), aboutUs.media.mediaUrl)).catch((err) =>
-				console.error(`Failed to delete physical file: ${err}`),
-			);
+		// 3. Check if a media entity exists
+		if (aboutUs.media) {
+			// Delete the physical file first
+			if (aboutUs.media.mediaUrl) {
+				await unlink(join(process.cwd(), aboutUs.media.mediaUrl)).catch((err) =>
+					console.error(`Failed to delete physical file: ${err}`),
+				);
+			}
+
+			// 4. IMPORTANT: Delete the MediaEntity record from the database
+			await this.mediaRepo.remove(aboutUs.media);
 		}
 
+		// 5. Now, safely remove the parent AboutUs entity
 		await this.aboutUsRepo.remove(aboutUs);
-		return { message: `About Us entry #${id} has been deleted.` };
+
+		return { message: `About Us entry #${id} has been deleted successfully.` };
 	}
 }
