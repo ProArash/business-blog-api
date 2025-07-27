@@ -1,5 +1,3 @@
-// src/api/about-us/about-us.controller.ts
-
 import {
 	Controller,
 	Post,

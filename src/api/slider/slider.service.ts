@@ -96,26 +96,20 @@ export class SliderService {
 	}
 
 	async remove(id: number): Promise<boolean> {
-		// 1. Fetch the slider and its related media entities
-		const slider = await this.findOne(id); // Assuming findOne loads the 'medias' relation
+		const slider = await this.findOne(id);
 
-		// 2. Check if the slider has associated media
 		if (slider.medias && slider.medias.length > 0) {
-			// First, delete all physical files
 			for (const media of slider.medias) {
 				if (media.mediaUrl) {
 					await unlink(join(process.cwd(), media.mediaUrl)).catch((error) => {
-						// Log error but continue execution
 						console.error(`Failed to delete file: ${media.mediaUrl}`, error);
 					});
 				}
 			}
 
-			// 3. IMPORTANT: Delete all associated MediaEntity records from the database
 			await this.mediaRepo.remove(slider.medias);
 		}
 
-		// 4. Now that the child records are gone, safely delete the slider entity
 		await this.repo.remove(slider);
 
 		return true;

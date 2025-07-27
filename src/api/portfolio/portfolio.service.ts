@@ -70,7 +70,6 @@ export class PortfolioService {
 
 		if (file) {
 			if (portfolioItem.media && portfolioItem.media.mediaUrl) {
-				// Delete the old physical file
 				await unlink(join(process.cwd(), portfolioItem.media.mediaUrl)).catch(
 					(err) => console.error(`Failed to delete old file: ${err}`),
 				);

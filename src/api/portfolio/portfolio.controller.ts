@@ -145,7 +145,7 @@ export class PortfolioController {
 	update(
 		@Query('id') id: string,
 		@Body() updatePortfolioDto: UpdatePortfolioDto,
-		@UploadedFile() file?: Express.Multer.File, // File is optional on update
+		@UploadedFile() file?: Express.Multer.File,
 	) {
 		return this.portfolioService.update(+id, updatePortfolioDto, file);
 	}
