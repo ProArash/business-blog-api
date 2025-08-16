@@ -24,7 +24,7 @@ export class MediaEntity extends FixedEntity {
 	@ManyToOne(() => UserEntity, (user) => user.files)
 	user: UserEntity;
 
-	@ManyToOne(() => SliderEntity, (slider) => slider.medias)
+	@OneToOne(() => SliderEntity, (slider) => slider.media)
 	slider: SliderEntity;
 
 	@OneToOne(() => PostEntity, (post) => post.media)

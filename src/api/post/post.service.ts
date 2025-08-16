@@ -6,7 +6,7 @@ import {
 import { CreatePostDto } from './dto/create-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity, PostStatus } from './entities/post.entity';
-import { Not, Repository } from 'typeorm';
+import { Brackets, Not, Repository } from 'typeorm';
 import { UserService } from '../user/user.service';
 import { MediaEntity, MediaType } from '../../utils/media.entity';
 import { unlink } from 'fs/promises';
@@ -64,6 +64,28 @@ export class PostService {
 			order: {
 				createdAt: 'DESC',
 			},
+			where: {
+				status: PostStatus.PUBLISHED,
+			},
+		});
+		return {
+			count: limit,
+			totalCount,
+			posts,
+		};
+	}
+
+	async findAllAdmin(pageNumber: number) {
+		const limit = 20;
+		const skip = (pageNumber - 1) * limit;
+		const totalCount = await this.postRepo.count();
+		const posts = await this.postRepo.find({
+			take: limit,
+			skip,
+			relations: ['author', 'media'],
+			order: {
+				createdAt: 'DESC',
+			},
 		});
 		return {
 			count: limit,
@@ -74,18 +96,65 @@ export class PostService {
 
 	async getPostById(postId: number) {
 		const post = await this.postRepo.findOne({
+			where: { id: postId, status: PostStatus.PUBLISHED },
+			relations: ['author', 'media', 'comments'],
+		});
+		if (!post) throw new NotFoundException('Post not found.');
+		return post;
+	}
+
+	async getPostByIdAdmin(postId: number) {
+		const post = await this.postRepo.findOne({
 			where: { id: postId },
 			relations: ['author', 'media', 'comments'],
 		});
 		if (!post) throw new NotFoundException('Post not found.');
 		return post;
 	}
+
+	async getPostBySlug(slug: string) {
+		const post = await this.postRepo.findOne({
+			where: { slug, status: PostStatus.PUBLISHED },
+			relations: ['author', 'media', 'comments'],
+		});
+		if (!post) throw new NotFoundException('Post not found.');
+		return post;
+	}
+
+	async search(term: string) {
+		const queryBuilder = this.postRepo.createQueryBuilder('post');
+
+		queryBuilder
+			.leftJoinAndSelect('post.author', 'author')
+			.leftJoinAndSelect('post.media', 'media')
+			.where('post.status = :status', { status: PostStatus.PUBLISHED })
+			.andWhere(
+				new Brackets((qb) => {
+					qb.where('post.title ILIKE :term', { term: `%${term}%` })
+						.orWhere('post.content ILIKE :term', { term: `%${term}%` })
+						.orWhere('post.tags::text ILIKE :term', { term: `%${term}%` });
+				}),
+			)
+			.orderBy('post.createdAt', 'DESC');
+
+		const [posts, totalCount] = await queryBuilder.getManyAndCount();
+
+		return {
+			count: posts.length,
+			totalCount,
+			posts,
+		};
+	}
+
 	async update(
 		id: number,
 		updatePostDto: UpdatePostDto,
 		file?: Express.Multer.File,
 	) {
-		const post = await this.getPostById(id);
+		const post = await this.postRepo.findOne({
+			where: { id },
+		});
+		if (!post) throw new NotFoundException('Post not found');
 		const originalStatus = post.status;
 
 		if (updatePostDto.slug && updatePostDto.slug !== post.slug) {

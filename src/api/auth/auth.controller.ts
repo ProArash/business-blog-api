@@ -51,6 +51,7 @@ export class AuthController {
 		res.cookie('token', cookies.token, {
 			httpOnly: true,
 			path: '/',
+			sameSite: 'lax',
 			secure: process.env.ENV == 'dev' ? false : true,
 			maxAge: 1000 * 60 * 60 * 24 * 7,
 		});

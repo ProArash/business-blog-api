@@ -26,7 +26,7 @@ import { MediaModule } from './api/media/media.module';
 		TypeOrmModule.forRootAsync({
 			inject: [ConfigService],
 			useFactory: (configService: ConfigService) => ({
-				type: 'postgres',
+				type: 'mysql',
 				url: configService.get<string>('DB_URL'),
 				autoLoadEntities: true,
 				entities: [MediaEntity],

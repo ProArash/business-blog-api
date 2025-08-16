@@ -21,22 +21,19 @@ export class SliderService {
 
 	async create(
 		createSliderDto: CreateSliderDto,
-		files: Array<Express.Multer.File>,
+		file: Express.Multer.File,
 		email: string,
 	) {
 		const user = await this.userService.getUserByEmail(email);
 
-		const mediaEntities = files.map((file) => {
-			const media = new MediaEntity();
-			media.mediaUrl = `/uploads/${file.filename}`;
-			media.mediaType = MediaType.IMAGE;
-			media.user = user;
-			return media;
-		});
+		const media = new MediaEntity();
+		media.mediaUrl = `/uploads/${file.filename}`;
+		media.mediaType = MediaType.IMAGE;
+		media.user = user;
 
 		const slider = this.repo.create({
 			...createSliderDto,
-			medias: mediaEntities,
+			media: media,
 		});
 
 		return this.repo.save(slider);
@@ -49,10 +46,13 @@ export class SliderService {
 		const sliders = await this.repo.find({
 			take: limit,
 			skip,
-			relations: ['medias'],
+			relations: ['media'],
+			order: {
+				order: 'ASC',
+			},
 		});
 		return {
-			count: limit,
+			count: sliders.length,
 			totalCount,
 			sliders,
 		};
@@ -61,7 +61,7 @@ export class SliderService {
 	async findOne(id: number) {
 		const slider = await this.repo.findOne({
 			where: { id },
-			relations: ['medias'],
+			relations: ['media'],
 		});
 		if (!slider) throw new NotFoundException('Slider not found.');
 		return slider;
@@ -70,24 +70,28 @@ export class SliderService {
 	async update(
 		updateSliderDto: UpdateSliderDto,
 		sliderId: number,
-		files: Array<Express.Multer.File>,
+		file: Express.Multer.File,
 	) {
 		const slider = await this.findOne(sliderId);
 
-		if (files && files.length > 0) {
-			for (const media of slider.medias) {
+		if (file) {
+			if (slider.media && slider.media.mediaUrl) {
 				try {
-					await unlink(join(process.cwd(), media.mediaUrl));
+					await unlink(join(process.cwd(), slider.media.mediaUrl));
+					await this.mediaRepo.remove(slider.media);
 				} catch (error) {
-					console.error(`Failed to delete old file: ${media.mediaUrl}`, error);
+					console.error(
+						`Failed to delete old file or DB entry: ${slider.media.mediaUrl}`,
+						error,
+					);
 				}
 			}
-			slider.medias = files.map((file) => {
-				const media = new MediaEntity();
-				media.mediaUrl = `/uploads/${file.filename}`;
-				media.mediaType = MediaType.IMAGE;
-				return media;
-			});
+
+			const newMedia = new MediaEntity();
+			newMedia.mediaUrl = `/uploads/${file.filename}`;
+			newMedia.mediaType = MediaType.IMAGE;
+			// newMedia.user = ...;
+			slider.media = newMedia;
 		}
 
 		Object.assign(slider, updateSliderDto);
@@ -98,16 +102,15 @@ export class SliderService {
 	async remove(id: number): Promise<boolean> {
 		const slider = await this.findOne(id);
 
-		if (slider.medias && slider.medias.length > 0) {
-			for (const media of slider.medias) {
-				if (media.mediaUrl) {
-					await unlink(join(process.cwd(), media.mediaUrl)).catch((error) => {
-						console.error(`Failed to delete file: ${media.mediaUrl}`, error);
-					});
-				}
+		if (slider.media && slider.media.mediaUrl) {
+			try {
+				await unlink(join(process.cwd(), slider.media.mediaUrl));
+			} catch (error) {
+				console.error(
+					`Failed to delete file from storage: ${slider.media.mediaUrl}`,
+					error,
+				);
 			}
-
-			await this.mediaRepo.remove(slider.medias);
 		}
 
 		await this.repo.remove(slider);

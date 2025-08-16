@@ -19,7 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuid } from 'uuid';
 import { extname } from 'path';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { UserPayload } from '../auth/user.payload';
 import { PostStatus } from './entities/post.entity';
@@ -100,6 +100,25 @@ export class PostController {
 		return this.postService.getPostById(+id);
 	}
 
+	@Get('getBySlug')
+	getBySlug(@Query('slug') slug: string) {
+		return this.postService.getPostBySlug(slug);
+	}
+
+	@UseGuards(AuthGuard('jwt'))
+	@Roles(UserRoles.ADMIN)
+	@Get('getAllAdmin')
+	findAllAdmin(@Query('pageNumber') pageNumber: string) {
+		return this.postService.findAllAdmin(+pageNumber);
+	}
+
+	@UseGuards(AuthGuard('jwt'))
+	@Roles(UserRoles.ADMIN)
+	@Get('getByIdAdmin')
+	getByIdAdmin(@Query('id') id: string) {
+		return this.postService.getPostByIdAdmin(+id);
+	}
+
 	@Patch('updateById')
 	@UseGuards(AuthGuard('jwt'), RolesGuard)
 	@Roles(UserRoles.ADMIN, UserRoles.AUTHOR)
@@ -146,10 +165,24 @@ export class PostController {
 	) {
 		return await this.postService.update(+id, updatePostDto, file);
 	}
+
 	@Delete('deleteById')
 	@UseGuards(AuthGuard('jwt'), RolesGuard)
 	@Roles(UserRoles.ADMIN, UserRoles.AUTHOR)
 	async remove(@Query('id') id: string) {
 		return await this.postService.remove(+id);
+	}
+
+	@Get('search')
+	@ApiQuery({
+		name: 'term',
+		required: true,
+		description: 'The search term for posts.',
+	})
+	search(@Query('term') term: string) {
+		if (!term || term.trim() === '') {
+			throw new BadRequestException('Search term cannot be empty.');
+		}
+		return this.postService.search(term);
 	}
 }

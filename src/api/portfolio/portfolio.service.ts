@@ -3,7 +3,7 @@ import { CreatePortfolioDto } from './dto/create-portfolio.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PortfolioEntity } from './entities/portfolio.entity';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { MediaEntity, MediaType } from '../../utils/media.entity';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
@@ -61,6 +61,17 @@ export class PortfolioService {
 		return portfolioItem;
 	}
 
+	async findOneByUrl(url: string) {
+		const portfolioItem = await this.portfolioRepo.findOne({
+			where: { url },
+			relations: ['media'],
+		});
+		if (!portfolioItem) {
+			throw new NotFoundException(`Portfolio item #${url} not found`);
+		}
+		return portfolioItem;
+	}
+
 	async update(
 		id: number,
 		updatePortfolioDto: UpdatePortfolioDto,
@@ -104,5 +115,30 @@ export class PortfolioService {
 		await this.portfolioRepo.remove(portfolioItem);
 
 		return { message: `Portfolio item #${id} has been deleted successfully` };
+	}
+
+	async search(term: string) {
+		const queryBuilder = this.portfolioRepo.createQueryBuilder('portfolio');
+
+		queryBuilder
+			.leftJoinAndSelect('portfolio.media', 'media')
+			.where(
+				new Brackets((qb) => {
+					qb.where('portfolio.title ILIKE :term', {
+						term: `%${term}%`,
+					}).orWhere('portfolio.description ILIKE :term', {
+						term: `%${term}%`,
+					});
+				}),
+			)
+			.orderBy('portfolio.createdAt', 'DESC');
+
+		const [items, totalCount] = await queryBuilder.getManyAndCount();
+
+		return {
+			count: items.length,
+			totalCount,
+			items,
+		};
 	}
 }

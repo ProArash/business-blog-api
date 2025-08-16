@@ -19,7 +19,7 @@ import { UserRoles } from '../user/user.roles';
 import { Roles } from '../auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { v4 as uuid } from 'uuid';
 import { RolesGuard } from '../auth/roles.guard';
 import { extname } from 'path';
@@ -95,6 +95,11 @@ export class PortfolioController {
 		return this.portfolioService.findOne(+id);
 	}
 
+	@Get('getByUrl')
+	findOneByUrl(@Query('url') url: string) {
+		return this.portfolioService.findOneByUrl(url);
+	}
+
 	@Patch('updateById')
 	@UseGuards(AuthGuard('jwt'), RolesGuard)
 	@Roles(UserRoles.ADMIN)
@@ -155,5 +160,14 @@ export class PortfolioController {
 	@Roles(UserRoles.ADMIN)
 	remove(@Query('id') id: string) {
 		return this.portfolioService.remove(+id);
+	}
+
+	@Get('search')
+	@ApiQuery({ name: 'term', required: true, description: 'The search term.' })
+	search(@Query('term') term: string) {
+		if (!term || term.trim() === '') {
+			throw new BadRequestException('Search term cannot be empty.');
+		}
+		return this.portfolioService.search(term);
 	}
 }

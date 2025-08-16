@@ -1,18 +1,25 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty } from 'class-validator';
+import { CommentStatus } from '../entities/comment.entity';
 
 export class CreateCommentDto {
+	@ApiProperty()
 	@IsNotEmpty()
 	content: string;
 
+	@ApiProperty()
 	@IsNotEmpty()
-	status: string;
+	status: CommentStatus;
 
+	@ApiProperty()
 	@IsNotEmpty()
-	postId: string;
+	postId: number;
 
+	@ApiProperty()
 	@IsNotEmpty()
 	name: string;
 
+	@ApiProperty()
 	@IsNotEmpty()
 	email: string;
 }

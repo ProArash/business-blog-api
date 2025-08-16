@@ -19,7 +19,9 @@ export class CommentEntity extends FixedEntity {
 	@Column()
 	email: string;
 
-	@Column()
+	@Column({
+		default: CommentStatus.PENDING,
+	})
 	status: CommentStatus;
 
 	@ManyToOne(() => PostEntity, (post) => post.comments)

@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { FixedEntity } from '../../../utils/fixed.entity';
 import { MediaEntity } from '../../../utils/media.entity';
 
@@ -10,11 +10,12 @@ export class SliderEntity extends FixedEntity {
 	@Column()
 	subtitle: string;
 
-	@OneToMany(() => MediaEntity, (file) => file.slider, {
+	@OneToOne(() => MediaEntity, (file) => file.slider, {
 		cascade: true,
 		onDelete: 'CASCADE',
 	})
-	medias: MediaEntity[];
+	@JoinColumn()
+	media: MediaEntity;
 
 	@Column()
 	link: string;
