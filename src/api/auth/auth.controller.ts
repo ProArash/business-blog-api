@@ -48,13 +48,7 @@ export class AuthController {
 		@Res() res: Response,
 	) {
 		const cookies = await this.authService.signIn(authDto);
-		res.cookie('token', cookies.token, {
-			httpOnly: true,
-			path: '/',
-			sameSite: 'lax',
-			secure: process.env.ENV == 'dev' ? false : true,
-			maxAge: 1000 * 60 * 60 * 24 * 7,
-		});
+		res.cookie('token', cookies.token);
 		return res.status(200).json({
 			message: 'Logged in successfuly.',
 		});
